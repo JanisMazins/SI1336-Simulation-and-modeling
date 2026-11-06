@@ -36,7 +36,7 @@ class Oscillator:
 
     """ Class for a general, simple oscillator """
 
-    def __init__(self, m=1, c=9, t0=0, theta0=np.pi*0.1, dtheta0=0, gamma=0):
+    def __init__(self, m=1, c=9, t0=0, theta0=np.pi*0.5, dtheta0=0, gamma=0):
         self.m = m              # mass of the pendulum bob
         self.c = c              # c = g/L
         self.L = G / c          # string length
@@ -119,16 +119,40 @@ class EulerCromerIntegrator(BaseIntegrator):
 
 class VerletIntegrator(BaseIntegrator):
     def timestep(self, simsystem, osc, obs):
-        accel = simsystem.force(osc) / osc.m
+        accel_n = simsystem.force(osc) / osc.m
         osc.t += self.dt
-        # TODO: Implement the integration here, updating osc.theta and osc.dtheta
+        osc.theta = osc.theta + osc.dtheta*self.dt + 1/2*accel_n*self.dt**2
+        accel_n_p_1 = -(G/osc.L*np.sin(osc.theta) + osc.gamma*(osc.dtheta + self.dt/2*accel_n))
+        osc.dtheta = osc.dtheta + 1/2*(accel_n_p_1 + accel_n)*self.dt
 
 
 class RK4Integrator(BaseIntegrator):
     def timestep(self, simsystem, osc, obs):
-        accel = simsystem.force(osc) / osc.m 
-        # osc.t += self.dt
-        # TODO: Implement the integration here, updating osc.theta and osc.dtheta
+        osc.t += self.dt
+        theta0 = osc.theta
+        dtheta0 = osc.dtheta
+
+        a1 = self.dt*simsystem.force(osc) / osc.m 
+        b1 = self.dt*osc.dtheta
+
+        osc.theta = theta0 + b1/2
+        osc.dtheta = dtheta0 + a1/2
+        a2 = self.dt*simsystem.force(osc)/osc.m 
+        b2 = self.dt*osc.dtheta
+
+        osc.theta = theta0 + b2/2
+        osc.dtheta = dtheta0 + a2/2
+        a3 = self.dt*simsystem.force(osc)/osc.m
+        b3 = self.dt*osc.dtheta
+
+        osc.theta = theta0 + b3
+        osc.dtheta = dtheta0 + a3
+        a4 = self.dt*simsystem.force(osc)/osc.m
+        b4 = self.dt*osc.dtheta
+
+        osc.theta = theta0 + 1/6*(b1 + 2*b2 + 2*b3 + b4)
+        osc.dtheta = dtheta0 + 1/6*(a1 + 2*a2 + 2*a3 + a4)
+
 
 
 # Animation function which integrates a few steps and return a line for the pendulum
@@ -195,7 +219,7 @@ class Simulation:
         # plt.show()
 
         # If you experience problems visualizing the animation try to comment/uncomment this line
-        plt.waitforbuttonpress(20)
+        plt.waitforbuttonpress(30)
 
     # Plot coordinates and energies (to be called after running)
     def plot_observables(self, title="simulation", ref_E=None):
@@ -217,8 +241,12 @@ class Simulation:
 # It's good practice to encapsulate the script execution in 
 # a function (e.g. for profiling reasons)
 def exercise_11() :
-    S = Simulation()
-    S.run_animate(Pendulum(), EulerCromerIntegrator()) # set c = g/l = 9 and m = 1 in Oscillator 
+    S = Simulation() # set c = g/l = 9 and m = 1 in Oscillator 
+    simsystem = Pendulum()
+    integrator = RK4Integrator()
+    tmax = 5000
+    #S.run_animate(simsystem, integrator, tmax=tmax) 
+    S.run(simsystem, integrator, tmax=tmax)
     S.plot_observables()
 
 
