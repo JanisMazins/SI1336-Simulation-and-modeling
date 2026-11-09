@@ -214,6 +214,8 @@ class Simulation:
         plt.legend()
         plt.show()
 
+#-----for E11-----
+
 def plot_exact_harmonic(t_max, dt, init, w):
     n = int(t_max/dt)
     x = np.linspace(0, t_max, n+1)
@@ -260,6 +262,8 @@ def plot_order(dt_list, t_max = 5):
     plt.legend()
     plt.show()
 
+#-----For E12-----
+
 def get_T(obs, tol=10**-3):
     dtheta = np.inf
     i = 0
@@ -274,6 +278,8 @@ def get_T(obs, tol=10**-3):
         i += 1
     return 2*obs.time[i]
 
+#-----For E13-----
+
 def get_ODE(t, gamma, w):
     if gamma/2 > w:
         a = np.sqrt((gamma/2)**2 - w**2)
@@ -283,6 +289,11 @@ def get_ODE(t, gamma, w):
     else:
         w_d = np.sqrt(w**2 - (gamma/2)**2)
         return np.e**(-gamma/2*t)*(np.cos(w_d*t) + gamma/(2*w_d)*np.sin(w_d*t))
+
+def get_tau(g, w, dt=0.001, t0=205, tol=10**-2):
+    while abs(1/np.e - get_ODE(t0, g, w)) > tol:
+        t0 -= dt
+    return t0
 
 
 def exercise_11() :
@@ -338,10 +349,10 @@ def exercise_12():
 
 def exercise_13():
     w = 3
-    gamma = 3 # [0.5, 1, 2, 3]
+    gamma = 0.01 # [0.5, 1, 2, 3]
     x0 = 1
     v0 = 0
-    t_max = 15
+    t_max = 250
     dt = 0.01
 
     S = Simulation()
@@ -350,15 +361,25 @@ def exercise_13():
     integrator.dt = dt
 
     x = np.linspace(0, t_max, int(t_max/dt)+10)
-    #y = [get_ODE(t, gamma, w) for t in x]
-    y = [np.e**(-gamma/2*t) for t in x]
+    y = [get_ODE(t, gamma, w) for t in x]
+    #y = [np.e**(-gamma/2*t) for t in x]
 
     
     S.reset(Oscillator(c=w**2, gamma=gamma, theta0=x0, dtheta0=v0))
     S.run(simsystem, integrator, tmax=t_max)
-    plt.plot(x, y, label="Envelope", color="C1")
+    plt.plot(x, y, label="Analytic", color="C1")
+    plt.axhline(y=1/np.e)
     S.plot_observables()
-    
+
+    gammas = np.linspace(0.01, 5.99, 10000)
+    t0_list = []
+    t0 = 204
+    for g in gammas:
+        t0 = get_tau(g, w, dt=0.001, t0=t0+10, tol=10**-2)
+        t0_list.append(t0)
+    plt.plot(gammas, t0_list)
+    plt.show()
+    print(t0_list)
         
 
 if __name__ == "__main__" :
