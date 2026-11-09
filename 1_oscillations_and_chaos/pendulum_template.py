@@ -274,8 +274,17 @@ def get_T(obs, tol=10**-3):
         i += 1
     return 2*obs.time[i]
 
-# It's good practice to encapsulate the script execution in 
-# a function (e.g. for profiling reasons)
+def get_ODE(t, gamma, w):
+    if gamma/2 > w:
+        a = np.sqrt((gamma/2)**2 - w**2)
+        return (1/2 + gamma/(4*a))*np.e**((-gamma/2 + a)*t) + (1/2 - gamma/(4*a))*np.e**((-gamma/2 - a)*t)
+    elif gamma/2 == w:
+        return (1 + gamma*t/2)*np.e**(-gamma/2*t)
+    else:
+        w_d = np.sqrt(w**2 - (gamma/2)**2)
+        return np.e**(-gamma/2*t)*(np.cos(w_d*t) + gamma/(2*w_d)*np.sin(w_d*t))
+
+
 def exercise_11() :
     S = Simulation() # set c = g/l = 9 and m = 1 in Oscillator 
 
@@ -329,7 +338,7 @@ def exercise_12():
 
 def exercise_13():
     w = 3
-    gamma = 1 # [0.5, 1, 2, 3]
+    gamma = 3 # [0.5, 1, 2, 3]
     x0 = 1
     v0 = 0
     t_max = 15
@@ -339,10 +348,15 @@ def exercise_13():
     simsystem = Harmonic()
     integrator = VerletIntegrator()
     integrator.dt = dt
+
+    x = np.linspace(0, t_max, int(t_max/dt)+10)
+    #y = [get_ODE(t, gamma, w) for t in x]
+    y = [np.e**(-gamma/2*t) for t in x]
+
     
-    S.reset(Oscillator(c=3**2, gamma=gamma, theta0=1, dtheta0=0))
+    S.reset(Oscillator(c=w**2, gamma=gamma, theta0=x0, dtheta0=v0))
     S.run(simsystem, integrator, tmax=t_max)
-    plt.axhline(y=1/np.e, label="relaxation time 1/e")
+    plt.plot(x, y, label="Envelope", color="C1")
     S.plot_observables()
     
         
