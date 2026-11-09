@@ -349,10 +349,10 @@ def exercise_12():
 
 def exercise_13():
     w = 3
-    gamma = 0.01 # [0.5, 1, 2, 3]
+    gamma = 3 # [0.5, 1, 2, 3]
     x0 = 1
     v0 = 0
-    t_max = 250
+    t_max = 15
     dt = 0.01
 
     S = Simulation()
@@ -361,25 +361,26 @@ def exercise_13():
     integrator.dt = dt
 
     x = np.linspace(0, t_max, int(t_max/dt)+10)
-    y = [get_ODE(t, gamma, w) for t in x]
-    #y = [np.e**(-gamma/2*t) for t in x]
+    #y = [get_ODE(t, gamma, w) for t in x]
+    y = [np.e**(-gamma/2*t) for t in x]
 
     
     S.reset(Oscillator(c=w**2, gamma=gamma, theta0=x0, dtheta0=v0))
     S.run(simsystem, integrator, tmax=t_max)
-    plt.plot(x, y, label="Analytic", color="C1")
-    plt.axhline(y=1/np.e)
+    plt.plot(x, y, label="Envelope", color="C1")
+    plt.axhline(y=1/np.e, label="y=1/e")
     S.plot_observables()
 
-    gammas = np.linspace(0.01, 5.99, 10000)
+    gammas = np.linspace(0.01, 5.99, 1000)
     t0_list = []
     t0 = 204
     for g in gammas:
-        t0 = get_tau(g, w, dt=0.001, t0=t0+10, tol=10**-2)
+        t0 = get_tau(g, w, dt=0.001, t0=t0+2, tol=10**-2)
         t0_list.append(t0)
-    plt.plot(gammas, t0_list)
+    plt.plot(gammas, t0_list, label="tau(gamma)")
+    plt.xlabel("gamma")
+    plt.ylabel("tau")
     plt.show()
-    print(t0_list)
         
 
 if __name__ == "__main__" :
