@@ -6,29 +6,6 @@
 from matplotlib import animation
 from pylab import *
 
-"""
-    This script defines all the classes needed to simulate (and animate) a single pendulum.
-    Hierarchy (somehow in order of encapsulation):
-    - Oscillator: a struct that stores the parameters of an oscillator (harmonic or pendulum)
-    - Observable: a struct that stores the oscillator's coordinates and energy values over time
-    - BaseSystem: harmonic oscillators and pendolums are distinguished only by the expression of
-                    the return force. This base class defines a virtual force method, which is
-                    specified by its child classes
-                    -> Harmonic: specifies the return force as -k*t (i.e. spring)
-                    -> Pendulum: specifies the return force as -k*sin(t)
-    - BaseIntegrator: parent class for all time-marching schemes; function integrate performs
-                    a numerical integration steps and updates the quantity of the system provided
-                    as input; function timestep wraps the numerical scheme itself and it's not
-                    directly implemented by BaseIntegrator, you need to implement it in his child
-                    classes (names are self-explanatory)
-                    -> EulerCromerIntegrator: ...
-                    -> VerletIntegrator: ...
-                    -> RK4Integrator: ...
-    - Simulation: this last class encapsulates the whole simulation procedure; functions are 
-                    self-explanatory; you can decide whether to just run the simulation or to
-                    run while also producing an animation: the latter option is slower
-"""
-
 # Global constants
 G = 9.8  # gravitational acceleration
 
@@ -91,10 +68,10 @@ class BaseIntegrator:
         obs.pos.append(osc.theta)
         obs.vel.append(osc.dtheta)
         # Function 'isinstance' is used to check if the instance of the system object is 'Harmonic' or 'Pendulum'
-        if isinstance(simsystem, Harmonic) :
+        if isinstance(simsystem, Harmonic):
             # Harmonic oscillator energy
             obs.energy.append(0.5 * osc.m * osc.L ** 2 * osc.dtheta ** 2 + 0.5 * osc.m * G * osc.L * osc.theta ** 2)
-        else :
+        else:
             # Pendulum energy
             obs.energy.append(0.5*osc.m*osc.L**2*osc.dtheta**2 + osc.m*G*osc.L*(1 - np.cos(osc.theta)))
 
@@ -122,7 +99,7 @@ class VerletIntegrator(BaseIntegrator):
         accel_n = simsystem.force(osc) / osc.m
         osc.t += self.dt
         osc.theta = osc.theta + osc.dtheta*self.dt + 1/2*accel_n*self.dt**2
-        accel_n_p_1 = -(G/osc.L*np.sin(osc.theta) + osc.gamma*(osc.dtheta + self.dt/2*accel_n))
+        accel_n_p_1 = -(G/osc.L*np.sin(osc.theta) + osc.gamma*(osc.dtheta + self.dt/2*accel_n))/(1 + osc.gamma*self.dt/2)
         osc.dtheta = osc.dtheta + 1/2*(accel_n_p_1 + accel_n)*self.dt
 
 
@@ -224,43 +201,153 @@ class Simulation:
     # Plot coordinates and energies (to be called after running)
     def plot_observables(self, title="simulation", ref_E=None):
 
-        plt.clf()
+        #plt.clf()
         plt.title(title)
         plt.plot(self.obs.time, self.obs.pos, 'b-', label="Position")
         plt.plot(self.obs.time, self.obs.vel, 'r-', label="Velocity")
-        plt.plot(self.obs.time, self.obs.energy, 'g-', label="Energy")
+        plt.plot(self.obs.time, self.obs.energy, 'g-', label="Energy") # To see energy for large step sizes(self.obs.energy - np.ones(len(self.obs.energy))*4.3987893)*100000000
         if ref_E != None :
             plt.plot([self.obs.time[0],self.obs.time[-1]] , [ref_E, ref_E], 'k--', label="Ref.")
         plt.xlabel('time')
         plt.ylabel('observables')
-        plt.legend()
         #plt.savefig(title + ".pdf")
+        plt.legend()
         plt.show()
 
+def plot_exact_harmonic(t_max, dt, init, w):
+    n = int(t_max/dt)
+    x = np.linspace(0, t_max, n+1)
+    plt.title("Analytical harmonic solution")
+    plt.plot(x, init*np.cos(w*x), "-b", label="Position")
+    plt.plot(x, -init*w*sin(w*x), "-r", label="Velocity")
+    plt.xlabel("time")
+    plt.ylabel("observables")
+    plt.legend()
+    plt.show()
+
+def plot_order(dt_list, t_max = 5):
+    def get_RK4(t_max):
+        S = Simulation()
+        Integrator = RK4Integrator()
+        Integrator.dt = 10**-6
+        S.run(Pendulum(), Integrator, tmax=t_max)
+        print(S.obs.time[-1])
+        return S.obs.pos[-1]
+
+    theta_diff_list = []
+    theta_exact = get_RK4(t_max)
+    S = Simulation()
+    Integrator = VerletIntegrator()
+    for dt in dt_list:
+        S.reset(Oscillator())
+        Integrator.dt = dt
+        S.run(Pendulum(), Integrator, tmax=t_max)
+        theta_temp = S.obs.pos[-1]
+        print(S.obs.time[-1])
+        theta_diff_list.append(abs(theta_temp - theta_exact))
+    def get_p(E1, E2):
+        return np.log(E1/E2)/np.log(2)
+    x = dt_list[:-1]
+    y = []
+    for i in range(len(theta_diff_list)):
+        y.append(get_p(theta_diff_list[i], theta_diff_list[i+1]))
+        if i == len(theta_diff_list) - 2:
+            break
+    y = list(reversed(y))
+    plt.scatter(x, y, label="p (time order of global error)")
+    plt.axhline(y=2, color="r", linestyle="-", label="p=2")
+    plt.ylim((0,5))
+    plt.legend()
+    plt.show()
+
+def get_T(obs, tol=10**-3):
+    dtheta = np.inf
+    i = 0
+    while True:
+        try:
+            if abs(obs.vel[i]) > tol:
+                break
+        except IndexError:
+            return 0
+        i += 1
+    while abs(obs.vel[i]) > tol:
+        i += 1
+    return 2*obs.time[i]
 
 # It's good practice to encapsulate the script execution in 
 # a function (e.g. for profiling reasons)
 def exercise_11() :
     S = Simulation() # set c = g/l = 9 and m = 1 in Oscillator 
+
     simsystem = Pendulum()
-    integrator = RK4Integrator()
-    tmax = 5000
+    integrator = VerletIntegrator()
+    tmax = 25
+    dt = 0.01
+    c = S.oscillator.c
+    init = S.oscillator.theta
+
     #S.run_animate(simsystem, integrator, tmax=tmax) 
-    S.run(simsystem, integrator, tmax=tmax)
+
+    integrator.dt = dt
+    #S.run(simsystem, integrator, tmax=tmax)
+    #S.plot_observables()
+    plt.show()
+    #plot_exact_harmonic(tmax, dt, init, np.sqrt(c))
+
+    plot_order([0.008, 0.004, 0.002, 0.001])
+
+def exercise_12(): 
+    t_max = 2
+    dt = 0.0001
+
+    S = Simulation()
+    simsystem = Pendulum()
+    integrator = VerletIntegrator()
+    integrator.dt = dt
+    c = S.oscillator.c
+
+    inits = np.linspace(0.01, 0.5, 50)*np.pi
+    peturbation_list = []
+    def get_peturbation_T(init):
+        return 2*np.pi/np.sqrt(c)*(1 + 1/16*init**2 + 11/3072*init**4 + 173/737280*init**6)
+    for init in inits:
+        peturbation_list.append(get_peturbation_T(init))
+
+    T_list = []
+
+    for init in inits:
+        S.reset(Oscillator(theta0=init))
+        S.run(simsystem, integrator, tmax=t_max)
+        T_list.append(get_T(S.obs))
+    plt.plot(inits, T_list, label="T(theta(0))")
+    #plt.plot(inits, peturbation_list, label="Peturbation series T(theta(0))")
+    plt.axhline(y=2*np.pi/np.sqrt(c), color = "r", label="T for harmonic oscillator")
+    plt.xlabel("theta(0)")
+    plt.ylabel("T for pendulum")
+    plt.legend()
+    plt.show()
+
+def exercise_13():
+    w = 3
+    gamma = 1 # [0.5, 1, 2, 3]
+    x0 = 1
+    v0 = 0
+    t_max = 15
+    dt = 0.01
+
+    S = Simulation()
+    simsystem = Harmonic()
+    integrator = VerletIntegrator()
+    integrator.dt = dt
+    
+    S.reset(Oscillator(c=3**2, gamma=gamma, theta0=1, dtheta0=0))
+    S.run(simsystem, integrator, tmax=t_max)
+    plt.axhline(y=1/np.e, label="relaxation time 1/e")
     S.plot_observables()
+    
+        
 
-
-"""
-    This directive instructs Python to run what comes after ' if __name__ == "__main__" : '
-    if the script pendulum_template.py is executed 
-    (e.g. by running "python3 pendulum_template.py" in your favourite terminal).
-    Otherwise, if pendulum_template.py is imported as a library 
-    (e.g. by calling "import pendulum_template as dp" in another Python script),
-    the following is ignored.
-    In this way you can choose whether to code the solution to the exericises here in this script 
-    or to have (a) separate script(s) that include pendulum_template.py as library.
-"""
 if __name__ == "__main__" :
-    exercise_11()
-    # exercise_12()
-    # ...
+    #exercise_11()
+    #exercise_12()
+    exercise_13()
