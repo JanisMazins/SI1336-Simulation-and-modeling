@@ -343,7 +343,7 @@ def exercise_15c():
 
 def exercise_15d():
     n = 10
-    H = 1
+    H = 6.375
     
     t_max = 500
     dt = 0.003
