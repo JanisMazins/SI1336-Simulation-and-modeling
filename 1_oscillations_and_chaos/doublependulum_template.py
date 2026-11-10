@@ -5,6 +5,7 @@
 
 from matplotlib import animation
 from pylab import *
+import numpy as np
 
 """
     This script simulates and animates a double pendulum.
@@ -28,7 +29,7 @@ def Ekin(osc):
 
 # Potential energy
 def Epot(osc):
-    return osc.m * G * osc.L * (3 - 2 * math.cos(osc.q1) - math.cos(osc.q2))
+    return osc.m * G * osc.L * (3 - 2 * np.cos(osc.q1) - np.cos(osc.q2))
 
 
 # Class that holds the parameter and state of a double pendulum
@@ -51,11 +52,11 @@ class Oscillator:
         while (self.p2 < 0):
             # Comment the two following lines in case you want to exactly prescribe values to q1 and q2
             # However, be sure that there exists a value of p2 compatible with the imposed total energy E!
-            self.q1 = math.pi * (2 * np.random.random() - 1)
-            self.q2 = math.pi * (2 * np.random.random() - 1)
+            #self.q1 = np.pi * (2 * np.random.random() - 1)
+            #self.q2 = np.pi * (2 * np.random.random() - 1)
             p2squared = self.p2squaredFromH()
             if (p2squared >= 0):
-                self.p2 = math.sqrt(p2squared)
+                self.p2 = np.sqrt(p2squared)
         self.q2_prev = self.q2
         print("Initialization:")
         print("E  = "+str(self.E))
@@ -83,12 +84,12 @@ class Observables:
 
 # Derivate of H with respect to p1
 def dHdp1(q1, q2, p1, p2, m, L):
-    # TODO: Write and return the formula for the derivative of H with respect to p1 here
+    return (p1 - p2*np.cos(q1 - q2))/(L**2*m*((np.sin(q1 - q1))**2 + 1))
 
 
 # Derivate of H with respect to p2
 def dHdp2(q1, q2, p1, p2, m, L):
-    # TODO: Write and return the formula for the derivative of H with respect to p2 here
+    return (2*p2 - p1*np.cos(q1 - q2))/(L**2*m*((np.sin(q1 - q2))**2 + 1))
 
 
 # Derivate of H with respect to q1
@@ -127,6 +128,10 @@ class RK4Integrator:
         obs.epot.append(Epot(osc))
         obs.ekin.append(Ekin(osc))
         obs.etot.append(Epot(osc) + Ekin(osc))
+        if osc.q2 < 10**-1 and osc.p2 - osc.p1 > 0:
+            obs.poincare_q1.append(osc.q1)
+            obs.poincare_p1.append(osc.p1)
+
         # TODO: Append values for the Poincare map
 
 
@@ -186,10 +191,10 @@ def animate(framenr, osc, obs, integrator, pendulum_lines, stepsperframe):
     for it in range(stepsperframe):
         integrator.integrate(osc, obs)
 
-    x1 = math.sin(osc.q1)
-    y1 = -math.cos(osc.q1)
-    x2 = x1 + math.sin(osc.q2)
-    y2 = y1 - math.cos(osc.q2)
+    x1 = np.sin(osc.q1)
+    y1 = -np.cos(osc.q1)
+    x2 = x1 + np.sin(osc.q2)
+    y2 = y1 - np.cos(osc.q2)
     pendulum_lines.set_data([0, x1, x2], [0, y1, y2])
     return pendulum_lines,
 
@@ -248,14 +253,14 @@ class Simulation:
     def plot_observables(self, title="Double pendulum") :
 
         plt.figure()
-        plt.title(title)
+        plt.title("p1-q1 phase plane plot")
         plt.xlabel('q1')
         plt.ylabel('p1')
         plt.plot(self.obs.q1list, self.obs.p1list)
         plt.tight_layout()  # adapt the plot area tot the text with larger fonts 
 
         plt.figure()
-        plt.title(title)
+        plt.title("p2-q2 phase plane plot")
         plt.xlabel('q2')
         plt.ylabel('p2')
         plt.plot(self.obs.q2list, self.obs.p2list)
@@ -263,14 +268,14 @@ class Simulation:
         plt.tight_layout()  # adapt the plot area tot the text with larger fonts 
 
         plt.figure()
-        plt.title(title)
+        plt.title("p1-q1 Poincaré plot")
         plt.xlabel('q1')
         plt.ylabel('p1')
         plt.plot(self.obs.poincare_q1, self.obs.poincare_p1, 'ro')
         plt.tight_layout()  # adapt the plot area tot the text with larger fonts
 
         plt.figure()
-        plt.title(title)
+        plt.title("Energy of the double pendulum")
         plt.xlabel('time')
         plt.ylabel('energy')
         plt.plot(self.obs.time, self.obs.epot, self.obs.time, self.obs.ekin, self.obs.time, self.obs.etot)
@@ -279,11 +284,41 @@ class Simulation:
 
         plt.show()
 
- 
-def exercise_15a() :
-    # TODO
+def get_p2(p1, q1, q2, H, L=1, m=1):
+    c1 = -p1*np.cos(q1 - q2)
+    c2 = 1/2*(p1**2 - (2*m*L**2*(1 + (np.sin(q1 - q2))**2))*(H + m*G*L*(2*np.cos(q1) + np.cos(q2) - 3)))
+    
+    if (c1/2)**2 - c2 < 0:
+        raise ValueError("No real p2 satisfy the given observables")
+    else:
+        a = -c1/2
+        b = np.sqrt((c1/2)**2 - c2)
+        print(f"p_1,2 = {a} ± {b}")
+        return a + b, a - b
+
+def exercise_15a():
+    t_max = 50
+    dt = 0.003
+    integrator = RK4Integrator()
+    integrator.dt = dt
+
+    #q1 = [0, 0.5, 1]*pi
+    #q2 = [0, 0.5, 1]*pi
+    #H = [1, 15, 40]
+    q1 = 1.1058531550558046
+    q2 = 3.061392570207309
+    p1 = 0
+    H = 40
+    p21, p22 = get_p2(p1, q1, q2, H)
+    
+    S = Simulation()
+    S.reset(osc=Oscillator(m=1, L=1, t0=0, E=H, init_cond=[q1, q2, p1, p21]))
+    S.run(integrator, tmax=t_max)#, stepsperframe=15)
+    S.plot_observables()
+
 
 if __name__ == "__main__" :
+    #get_p2(0, 0*np.pi, 0*np.pi, 1)
     exercise_15a()
     # exercise_15b()
     # ...
