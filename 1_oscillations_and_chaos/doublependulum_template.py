@@ -52,8 +52,8 @@ class Oscillator:
         while (self.p2 < 0):
             # Comment the two following lines in case you want to exactly prescribe values to q1 and q2
             # However, be sure that there exists a value of p2 compatible with the imposed total energy E!
-            #self.q1 = np.pi * (2 * np.random.random() - 1)
-            #self.q2 = np.pi * (2 * np.random.random() - 1)
+            self.q1 = np.pi * (2 * np.random.random() - 1)
+            self.q2 = np.pi * (2 * np.random.random() - 1)
             p2squared = self.p2squaredFromH()
             if (p2squared >= 0):
                 self.p2 = np.sqrt(p2squared)
@@ -297,7 +297,7 @@ def plot_poincare(poincare_q1, poincare_p1):
     plt.show()
 
 def exercise_15ab():
-    t_max = 50
+    t_max = 150
     dt = 0.003
     integrator = RK4Integrator()
     integrator.dt = dt
@@ -308,13 +308,14 @@ def exercise_15ab():
     q1 = 1.1058531550558046
     q2 = 3.061392570207309
     p1 = 0
-    H = 40
-    p21, p22 = get_p2(p1, q1, q2, H)
+    H = 12
+    #p21, p22 = get_p2(p1, q1, q2, H)
     
     S = Simulation()
-    S.reset(osc=Oscillator(m=1, L=1, t0=0, E=H, init_cond=[q1, q2, p1, p21]))
-    S.run(integrator, tmax=t_max)#, stepsperframe=15)
+    S.reset(osc=Oscillator(m=1, L=1, t0=0, E=H))
+    S.run_animate(integrator, tmax=t_max, stepsperframe=15)
     S.plot_observables()
+    plot_poincare(S.obs.poincare_q1, S.obs.poincare_p1)
 
 def exercise_15c():
     H = 15
@@ -343,7 +344,7 @@ def exercise_15c():
 
 def exercise_15d():
     n = 10
-    H = 6.375
+    H = 25
     
     t_max = 500
     dt = 0.003
@@ -370,7 +371,7 @@ def exercise_15d():
 
 if __name__ == "__main__" :
     #get_p2(0, 0*np.pi, 0*np.pi, 1)
-    #exercise_15ab()
+    exercise_15ab()
     #exercise_15c()
-    exercise_15d()
+    #exercise_15d()
     # ...
