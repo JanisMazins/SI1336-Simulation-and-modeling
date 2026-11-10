@@ -128,11 +128,9 @@ class RK4Integrator:
         obs.epot.append(Epot(osc))
         obs.ekin.append(Ekin(osc))
         obs.etot.append(Epot(osc) + Ekin(osc))
-        if osc.q2 < 10**-1 and osc.p2 - osc.p1 > 0:
+        if abs(osc.q2) < 10**-2 and osc.p2 - osc.p1 > 0:
             obs.poincare_q1.append(osc.q1)
             obs.poincare_p1.append(osc.p1)
-
-        # TODO: Append values for the Poincare map
 
 
     """
@@ -268,13 +266,6 @@ class Simulation:
         plt.tight_layout()  # adapt the plot area tot the text with larger fonts 
 
         plt.figure()
-        plt.title("p1-q1 Poincaré plot")
-        plt.xlabel('q1')
-        plt.ylabel('p1')
-        plt.plot(self.obs.poincare_q1, self.obs.poincare_p1, 'ro')
-        plt.tight_layout()  # adapt the plot area tot the text with larger fonts
-
-        plt.figure()
         plt.title("Energy of the double pendulum")
         plt.xlabel('time')
         plt.ylabel('energy')
@@ -296,7 +287,16 @@ def get_p2(p1, q1, q2, H, L=1, m=1):
         print(f"p_1,2 = {a} ± {b}")
         return a + b, a - b
 
-def exercise_15a():
+def plot_poincare(poincare_q1, poincare_p1):
+    plt.figure()
+    plt.title("p1-q1 Poincaré plot")
+    plt.xlabel('q1')
+    plt.ylabel('p1')
+    plt.plot(poincare_q1, poincare_p1, 'ro', markersize=5)
+    plt.tight_layout()  # adapt the plot area tot the text with larger fonts
+    plt.show()
+
+def exercise_15ab():
     t_max = 50
     dt = 0.003
     integrator = RK4Integrator()
@@ -316,9 +316,61 @@ def exercise_15a():
     S.run(integrator, tmax=t_max)#, stepsperframe=15)
     S.plot_observables()
 
+def exercise_15c():
+    H = 15
+    q1_12 = [0, 1.1]
+    q2 = 0
+    p1 = 0
+
+    t_max = 2000
+    dt = 0.003
+
+    integrator = RK4Integrator()
+    integrator.dt = dt
+
+    poincare_q1_list = []
+    poincare_p1_list = []
+    for i in range(2):
+        S = Simulation()
+        q1 = q1_12[i]
+        p2 = get_p2(p1, q1, q2, H)
+        S.reset(osc=Oscillator(m=1, L=1, t0=0, E=H, init_cond=[q1, q2, p1, p2]))
+        S.run(integrator, tmax=t_max)
+        poincare_q1_list.extend(S.obs.poincare_q1)
+        poincare_p1_list.extend(S.obs.poincare_p1)
+
+    plot_poincare(poincare_q1_list, poincare_p1_list)
+
+def exercise_15d():
+    n = 10
+    H = 1
+    
+    t_max = 500
+    dt = 0.003
+
+    integrator = RK4Integrator()
+    integrator.dt = dt
+
+    poincare_q1_list = []
+    poincare_p1_list = []
+
+    for i in range(n):
+        print(f"Iteration: {i}")
+        S = Simulation()
+        S.reset(osc=Oscillator(m=1, L=1, t0=0, E=H))
+        S.run(integrator, tmax=t_max)
+        poincare_q1_list.extend(S.obs.poincare_q1)
+        poincare_p1_list.extend(S.obs.poincare_p1)
+
+    plot_poincare(poincare_q1_list, poincare_p1_list)
+
+
+
+
 
 if __name__ == "__main__" :
     #get_p2(0, 0*np.pi, 0*np.pi, 1)
-    exercise_15a()
-    # exercise_15b()
+    #exercise_15ab()
+    #exercise_15c()
+    exercise_15d()
     # ...
