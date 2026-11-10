@@ -349,7 +349,7 @@ def exercise_12():
 
 def exercise_13():
     w = 3
-    gamma = 3 # [0.5, 1, 2, 3]
+    gamma = 5.99 # [0.5, 1, 2, 3]
     x0 = 1
     v0 = 0
     t_max = 15
@@ -362,14 +362,15 @@ def exercise_13():
 
     x = np.linspace(0, t_max, int(t_max/dt)+10)
     #y = [get_ODE(t, gamma, w) for t in x]
-    y = [np.e**(-gamma/2*t) for t in x]
+    #y = [np.e**(-gamma/2*t) for t in x]
 
     
     S.reset(Oscillator(c=w**2, gamma=gamma, theta0=x0, dtheta0=v0))
     S.run(simsystem, integrator, tmax=t_max)
-    plt.plot(x, y, label="Envelope", color="C1")
+    #plt.plot(x, y, label="Envelope", color="C1")
     plt.axhline(y=1/np.e, label="y=1/e")
     S.plot_observables()
+    print(S.obs.pos[-1])
 
     gammas = np.linspace(0.01, 5.99, 1000)
     t0_list = []
@@ -381,9 +382,62 @@ def exercise_13():
     plt.xlabel("gamma")
     plt.ylabel("tau")
     plt.show()
+
+def exercise_14():
+    gamma = 1.5
+    c = 3**2
+    theta0 = np.pi*0.5
+    dtheta0 = 0
+    dt = 0.001
+    t_max = 50
+
+    symsystem = Pendulum()
+    integrator = VerletIntegrator()
+    integrator.dt = dt
+
+    S = Simulation()
+    S.reset(Oscillator(gamma=gamma, c=c, theta0=theta0, dtheta0=dtheta0))
+    S.run(symsystem, integrator, tmax=50)
+
+    x = S.obs.pos
+    y = S.obs.vel
+
+
+    mid1 = int((t_max/dt)/50)
+    mid2 = int((t_max/dt)/20)
+
+    v1 = S.obs.vel[0]
+    v2 = S.obs.vel[mid1]
+    v3 = S.obs.vel[mid2]
+    v4 = S.obs.vel[-1]
+
+    x1 = S.obs.pos[0]
+    x2 = S.obs.pos[mid1]
+    x3 = S.obs.pos[mid2]
+    x4 = S.obs.pos[-1]
+
+    t1 = S.obs.time[0]
+    t2 = S.obs.time[mid1]
+    t3 = S.obs.time[mid2]
+    t4 = S.obs.time[-1]
+
+
+
+    plt.plot(x, y, label="Theta vs dtheta", zorder=1)
+
+    plt.plot(x1, v1, "o", label=f"t={round(t1, 1)}", zorder=2)
+    plt.plot(x2, v2, "o", label=f"t={round(t2, 1)}", zorder=2)
+    plt.plot(x3, v3, "o", label=f"t={round(t3, 1)}", zorder=2)
+    plt.plot(x4, v4, "o", label=f"t={round(t4, 1)}", zorder=2)
+
+    plt.xlabel("Theta")
+    plt.ylabel("dtheta")
+    plt.legend()
+    plt.show()   
         
 
 if __name__ == "__main__" :
     #exercise_11()
     #exercise_12()
-    exercise_13()
+    #exercise_13()
+    exercise_14()
