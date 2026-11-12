@@ -300,8 +300,8 @@ def exercise_11() :
     S = Simulation() # set c = g/l = 9 and m = 1 in Oscillator 
 
     simsystem = Pendulum()
-    integrator = VerletIntegrator()
-    tmax = 25
+    integrator = EulerCromerIntegrator()
+    tmax = 300
     dt = 0.01
     c = S.oscillator.c
     init = S.oscillator.theta
@@ -309,8 +309,8 @@ def exercise_11() :
     #S.run_animate(simsystem, integrator, tmax=tmax) 
 
     integrator.dt = dt
-    #S.run(simsystem, integrator, tmax=tmax)
-    #S.plot_observables()
+    S.run(simsystem, integrator, tmax=tmax)
+    S.plot_observables()
     plt.show()
     #plot_exact_harmonic(tmax, dt, init, np.sqrt(c))
 
@@ -437,7 +437,7 @@ def exercise_14():
         
 
 if __name__ == "__main__" :
-    #exercise_11()
+    exercise_11()
     #exercise_12()
     #exercise_13()
-    exercise_14()
+    #exercise_14()

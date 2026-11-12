@@ -1,0 +1,4 @@
+1.1:
+- Text was clear and correct. 
+- Good plots. Easy to compare when the comparisons are done in one plot. 
+- Nice find with the time step dependence, with clear plot to match (fig. 5)
