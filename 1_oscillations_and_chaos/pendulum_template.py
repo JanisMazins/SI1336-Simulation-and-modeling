@@ -204,8 +204,8 @@ class Simulation:
         #plt.clf()
         plt.title(title)
         plt.plot(self.obs.time, self.obs.pos, 'b-', label="Position")
-        plt.plot(self.obs.time, self.obs.vel, 'r-', label="Velocity")
-        plt.plot(self.obs.time, self.obs.energy, 'g-', label="Energy") # To see energy for large step sizes(self.obs.energy - np.ones(len(self.obs.energy))*4.3987893)*100000000
+        #plt.plot(self.obs.time, self.obs.vel, 'r-', label="Velocity")
+        #plt.plot(self.obs.time, self.obs.energy, 'g-', label="Energy") # To see energy for large step sizes(self.obs.energy - np.ones(len(self.obs.energy))*4.3987893)*100000000
         if ref_E != None :
             plt.plot([self.obs.time[0],self.obs.time[-1]] , [ref_E, ref_E], 'k--', label="Ref.")
         plt.xlabel('time')
@@ -349,7 +349,7 @@ def exercise_12():
 
 def exercise_13():
     w = 3
-    gamma = 5.99 # [0.5, 1, 2, 3]
+    gamma = 2 # [0.5, 1, 2, 3]
     x0 = 1
     v0 = 0
     t_max = 15
@@ -362,12 +362,12 @@ def exercise_13():
 
     x = np.linspace(0, t_max, int(t_max/dt)+10)
     #y = [get_ODE(t, gamma, w) for t in x]
-    #y = [np.e**(-gamma/2*t) for t in x]
+    y = [np.e**(-gamma/2*t) for t in x]
 
     
     S.reset(Oscillator(c=w**2, gamma=gamma, theta0=x0, dtheta0=v0))
     S.run(simsystem, integrator, tmax=t_max)
-    #plt.plot(x, y, label="Envelope", color="C1")
+    plt.plot(x, y, label="Envelope", color="C1")
     plt.axhline(y=1/np.e, label="y=1/e")
     S.plot_observables()
     print(S.obs.pos[-1])
@@ -437,7 +437,7 @@ def exercise_14():
         
 
 if __name__ == "__main__" :
-    exercise_11()
+    #exercise_11()
     #exercise_12()
-    #exercise_13()
+    exercise_13()
     #exercise_14()

@@ -1,4 +1,35 @@
 1.1:
-- Text was clear and correct. 
-- Good plots. Easy to compare when the comparisons are done in one plot. 
-- Nice find with the time step dependence, with clear plot to match (fig. 5)
++ Good plots. Easy to compare when the comparisons are done in one plot. 
++ Nice find with the time step dependence with the phase shift, with clear plot to match (fig. 5).
+
+1.2:
++ Nice plot. Good that you show the initial angle dependence until theta=pi. Good x-axis normalization.
+
+1.3:
+- Not obvious what step length was used. Might make it slightly more difficult to replicate your results.
+- How was the relaxation time calculated with the local maxima? Did you take first peak which had x(t) < 1/e or did you fit a curve to the maxima? 
+    - Clues: What does the analytical solution look like for the position? What does that tell you about the envelope? Plot the envelope, y = 1/e and the position for gamma = 2. Does the maxima at t ~ 2.2 accurately describe the intersection of the position graph with y = 1/e?
++ Good assessment that the results were suspiscious!
++ Correct result for critical damping.
+
+1.4:
++ Good and intuitive explaination of the phase space diagram!
+
+1.5:
+    a: 
+    + Correct!
+    b: 
+    + I agree.
+    c: 
+    - p_2 - p_1 > 0 is not correctly displayed.
+    + Good observations and very nice plots. Good that you have separate colors for each initial condition so that one can see if the motion is regular. Figure 20 looks almost exactly like figure 6.13 in the lecture slides!
+    - t_max isn't mentioned for integrations, which makes it harder to replicate your results. 
+    d:
+    - What t_max was used? Are the points really scattered or would a longer integration time reveal a patterns for all of the initial conditions given E = 10? 
+    - 5 energy units is a pretty large range, given that we are looking at energies of 1, 15 and 40. What does the Poincaré map look for E = 7.5? Maybe some form of interval halving would be of use?
+    + Plots look very nice!
+
+Overall:
++ Text was clear and mostly correct. 
++ Very good looking plots, especially in project 1.5.
+- I would have maybe placed some of the plots closer to the relevant text in the rapport. If you're writing in LaTeX, you can use \usepackage{placeins} and then use \FloatBarrier and \begin{figure}[h!] [...] to format the image placement.
