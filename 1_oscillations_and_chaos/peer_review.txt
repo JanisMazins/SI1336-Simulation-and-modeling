@@ -30,6 +30,8 @@
     + Plots look very nice!
 
 Overall:
-+ Text was clear and mostly correct. 
++ Text was clear, concise and mostly correct. 
 + Very good looking plots, especially in project 1.5.
 - I would have maybe placed some of the plots closer to the relevant text in the rapport. If you're writing in LaTeX, you can use \usepackage{placeins} and then use \FloatBarrier and \begin{figure}[h!] [...] to format the image placement.
+
+Very good rapport overall!
