@@ -11,10 +11,32 @@ def rw_points(steps=100, v0=(0,0), dx=1):
     rw_n = []
     for i in range(steps):
         n = random.randint(0,3)
-        x0 = np.cos(np.pi/2*n)
-        y0 = np.sin(np.pi/2*n)
-        x += x0
-        y += y0
+        if n < 2:
+            x0 = np.cos(np.pi*n)
+            x += x0
+        else:
+            y0 = np.sin(np.pi/2 + np.pi*n)
+            y += y0
+        rw_x.append(x)
+        rw_y.append(y)
+        rw_n.append(n)
+    return rw_x, rw_y, rw_n
+
+def new_rw_points(steps=128, v0=(0,0), r0=1, a=1, c=1, m=100):
+    x = v0[0]
+    y = v0[1]
+    rw_x = [x]
+    rw_y = [y]
+    rw_n = []
+    for i in range(steps):
+        r0 = (a*r0 + c) % m
+        n = int(4*r0/m)
+        if n < 2:
+            x0 = np.cos(np.pi*n)
+            x += x0
+        else:
+            y0 = np.sin(np.pi/2 + np.pi*n)
+            y += y0
         rw_x.append(x)
         rw_y.append(y)
         rw_n.append(n)
@@ -58,12 +80,24 @@ def plot_rw(rw_x, rw_y, rw_n, fig_name=None):
     
 
 def e_21a():
-    steps = 1000
+    steps = 100
     v0 = (0,0)
     
     rw_x, rw_y, rw_n = rw_points(steps=steps, v0=v0)
-    plot_rw(rw_x, rw_y, rw_n, fig_name="rw_n1000_1")
+    plot_rw(rw_x, rw_y, rw_n, fig_name=None)
+
+def e_21b():
+    steps = 100
+    v0 = (0,0)
+    r0 = 1
+    a = 3
+    c = 4
+    m = 130
+
+    rw_x, rw_y, rw_n = new_rw_points(steps=steps, v0=v0, r0=r0, a=a, c=c, m=m)
+    plot_rw(rw_x, rw_y, rw_n, fig_name=None)#"new_rw_n100_r1_a3_c4_m128")
 
 
 if __name__ == "__main__":
-    e_21a()
+    #e_21a()
+    e_21b()
