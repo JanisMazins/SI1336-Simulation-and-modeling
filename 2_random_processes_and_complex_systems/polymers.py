@@ -3,18 +3,34 @@ import random
 import numpy as np
 import os
 
-def rw_points(get_n, args_n, steps=100, v0=(0,0), dx=1):
+def rw_points(get_n, args_n, steps=100, v0=(0,0), dx=1, mode=None):
     x = v0[0]
     y = v0[1]
     rw_x = [x]
     rw_y = [y]
     rw_n = []
+    #Deals with special cases
     for i in range(steps):
         if get_n is get_recursive_n:
             r0, n = get_n(*args_n)
             args_n = (r0, *args_n[1:])
-        else:
-            n = get_n(*args_n)
+        elif get_n is random.choice:
+            args_n = [[0, 1, 2, 3]]
+            try:
+                n_prev = rw_n[-1]
+                match n_prev:
+                    case 0:
+                        args_n[0].remove(1)
+                    case 1:
+                        args_n[0].remove(0)
+                    case 2:
+                        args_n[0].remove(3)
+                    case 3:
+                        args_n[0].remove(2)
+            except IndexError:
+                pass
+
+        n = get_n(*args_n)
 
         match n:
             case 0:
@@ -25,6 +41,12 @@ def rw_points(get_n, args_n, steps=100, v0=(0,0), dx=1):
                 y += 1
             case 3:
                 y -= 1
+
+        if mode == "SA":
+            for idx, xval in enumerate(rw_x):
+                if x == xval and y == rw_y[idx]:
+                    return None
+
         rw_x.append(x)
         rw_y.append(y)
         rw_n.append(n)
@@ -72,8 +94,6 @@ def plot_rw(rw_x, rw_y, rw_n, fig_name=None):
         else:
             os.remove(fig_path)
         
-    
-
 def e_21a():
     steps = 100
     v0 = (0,0)
@@ -93,34 +113,81 @@ def e_21b():
     plot_rw(rw_x, rw_y, rw_n, fig_name="new_rw_n100_rm100_a3_c4_m128")
 
 def e_21c():
-    N_vals = 500
-    N_max = 2000
-    k = 2000
+    N_vals = 100
+    N_max = 1000
+    k = 1000
 
     N_list = np.round(np.linspace(1, N_max, N_vals)).astype(int)
-    R_mean_list = []
+    R2_rms_list = []
+    std_list = []
 
     for N in N_list:
         print(f"N={N}/{N_max}")
         R2_temp_list = []
+        R4_temp_list = []
         for i in range(k):
             rw_x, rw_y, _ = rw_points(random.randint, (0,3), steps=N)
             R2 = rw_x[-1]**2 + rw_y[-1]**2
             R2_temp_list.append(R2)
+            R4_temp_list.append(R2**2)
         mean = np.sqrt(sum(R2_temp_list)/k)
-        R_mean_list.append(mean)
+        std = np.sqrt(sum(R4_temp_list)/k - (sum(R2_temp_list)/k)**2)
+        R2_rms_list.append(mean)
+        std_list.append(std)
 
-    plt.plot(N_list, R_mean_list, label="<R^2>^-(1/2)[N]")
+    plt.figure("Distance RMS")
+    plt.plot(N_list, R2_rms_list, label="<R^2>^-(1/2)[N]")
     plt.xlabel("N")
-    plt.ylabel("<R^2>^-(1/2)")
+    plt.ylabel("Distance")
+    plt.legend()
+
+    plt.figure("Distance STD")
+    plt.plot(N_list, std_list, label="std = sqrt(<R^4> - <R^2>^2)")
+    plt.xlabel("N")
+    plt.ylabel("Distance")
+    plt.legend()
+
+    plt.show()
+
+def e_21d():
+    N_vals = 30
+    N_max = 30
+    k = 1000000
+    get_n_args = (0, 3)
+    get_n = random.randint
+
+    N_list = np.round(np.linspace(1, N_max, N_vals)).astype(int)
+    rel_succ_list = []
+
+    for N in N_list:
+        print(f"N={N}/{N_max}")
+        s = 0
+        for i in range(k):
+            try:
+                _, _, _ = rw_points(get_n, get_n_args, steps=N, mode="SA")
+                s += 1
+            except TypeError:
+                pass
+        rel_succ_list.append(s/k)
+
+    plt.figure("Success rate vs number of steps")
+    plt.plot(N_list, rel_succ_list, label="Relative success vs nr. of steps N")
+    plt.axhline(y=0, label="y=0", color="r", linewidth=0.4)
+    plt.xlabel("N")
+    plt.ylabel("Relative success")
+    
     plt.legend()
     plt.show()
 
-    
-
-
+def test_random():
+    k = 100000
+    n_list = [int(random.random()*4) for i in range(k)]
+    plt.hist(n_list)
+    plt.show()
 
 if __name__ == "__main__":
     #e_21a()
     #e_21b()
-    e_21c()
+    #e_21c()
+    e_21d()
+    #test_random()
