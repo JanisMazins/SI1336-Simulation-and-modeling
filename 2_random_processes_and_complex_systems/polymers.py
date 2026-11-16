@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 import os
+import copy
 
 def rw_points(get_n, args_n, steps=100, v0=(0,0), dx=1, mode=None):
     x = v0[0]
@@ -179,6 +180,50 @@ def e_21d():
     plt.legend()
     plt.show()
 
+def e_21e():
+    N_vals = 40
+    N_max = 40
+    k = 100
+
+    get_n = random.choice
+    args_n = (0,3)
+    mode = "SA"
+
+    N_list = np.round(np.linspace(1, N_max, N_vals)).astype(int)
+    R2_rms_list = []
+
+    for N in N_list:
+        print(f"N={N}/{N_max}")
+        R2_temp_list = []
+        for i in range(k):
+            while True:
+                try:
+                    rw_x, rw_y, _ = rw_points(get_n, args_n, steps=N, mode=mode)
+                    break
+                except TypeError:
+                    pass
+            R2 = rw_x[-1]**2 + rw_y[-1]**2
+            R2_temp_list.append(R2)
+        mean = np.sqrt(sum(R2_temp_list)/k)
+        R2_rms_list.append(mean)
+    
+    """
+    A = np.log(N_list)
+    b = np.log(R2_rms_list)
+
+    m = solve(A.T@A, A.T@b)
+    """
+    m, b = np.polyfit(np.log(list(N_list).copy()), np.log(list(R2_rms_list).copy()), 1)
+
+    plt.figure("Distance RMS")
+    plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)[N]")
+    plt.plot([1, N_max], [m+b, m*N_max+b], label=f"y = {m}*x + {b} (in log space)")
+    plt.xlabel("N")
+    plt.ylabel("Distance")
+    plt.legend()
+
+    plt.show()
+
 def test_random():
     k = 100000
     n_list = [int(random.random()*4) for i in range(k)]
@@ -189,5 +234,6 @@ if __name__ == "__main__":
     #e_21a()
     #e_21b()
     #e_21c()
-    e_21d()
+    #e_21d()
+    e_21e()
     #test_random()
