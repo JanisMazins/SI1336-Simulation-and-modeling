@@ -183,7 +183,7 @@ def e_21d():
 def e_21e():
     N_vals = 40
     N_max = 40
-    k = 100
+    k = 1000
 
     get_n = random.choice
     args_n = (0,3)
@@ -217,7 +217,7 @@ def e_21e():
 
     plt.figure("Distance RMS")
     plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)[N]")
-    plt.plot([1, N_max], [m+b, m*N_max+b], label=f"y = {m}*x + {b} (in log space)")
+    #plt.plot([1, N_max], [m+b, m*N_max+b], label=f"y = {m}*x + {b} (in log space)")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()
