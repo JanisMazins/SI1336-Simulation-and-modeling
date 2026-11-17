@@ -181,13 +181,13 @@ def e_21d():
     plt.show()
 
 def e_21e():
-    N_vals = 40
-    N_max = 40
-    k = 1000
+    N_vals = 100
+    N_max = 1000
+    k = 500
 
-    get_n = random.choice
+    get_n = random.randint
     args_n = (0,3)
-    mode = "SA"
+    mode = None
 
     N_list = np.round(np.linspace(1, N_max, N_vals)).astype(int)
     R2_rms_list = []
@@ -213,11 +213,12 @@ def e_21e():
 
     m = solve(A.T@A, A.T@b)
     """
-    m, b = np.polyfit(np.log(list(N_list).copy()), np.log(list(R2_rms_list).copy()), 1)
+    m, b = np.polyfit(np.log(N_list.copy()), np.log(R2_rms_list.copy()), 1)
+    f = lambda x: np.e**b*x**m
 
     plt.figure("Distance RMS")
-    plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)[N]")
-    #plt.plot([1, N_max], [m+b, m*N_max+b], label=f"y = {m}*x + {b} (in log space)")
+    plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)", base=np.e)
+    plt.loglog(N_list, f(N_list), label=f"y = e^[{b}]*N^[{m}] (in log space)")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()
