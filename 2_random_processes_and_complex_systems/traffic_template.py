@@ -327,50 +327,58 @@ def e_22b():
 def e_22c():
     vmax = 2
     p = 0.5
-    max_roadLength = 75
+
     min_roadLength = 2
+    max_roadLength = 75
+    N_stride = 1
+    densities = np.linspace(0, 1, 25)
 
     S = Simulation()
-    
-    N_stride = 1
+
     k = 100
-    numsteps = 100
+    numsteps = 300
+    tol = 0.00001
+    
+    nested_fr_list = []
+    diff_list = []
 
-    fr_max_list = []
-    fr_max_idx_list = []
-
-    for roadLength in range(min_roadLength, max_roadLength + 1):
+    for rL_idx, roadLength in enumerate(range(min_roadLength, max_roadLength + 1, N_stride)):
         print(f"road length = {roadLength}/{max_roadLength}")
         fr_list = []
-
-        for N_cars in range(0, roadLength, N_stride):
+        d_list = []
+        for d in densities:
             fr_temp_list = []
             for i in range(k):
-                S.reset(Cars(numCars=N_cars, roadLength=roadLength, init_cond="random"))
+                S.reset(Cars(numCars=int(roadLength*d), roadLength=roadLength, init_cond="random"))
                 S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
-                avg_fr_init_cond = sum(S.obs.flowrate)/S.cars.t
-                fr_temp_list.append(avg_fr_init_cond)
-            avg_fr_k_attempts = sum(fr_temp_list)/k
-            fr_list.append(avg_fr_k_attempts)
-
-        fr_max = 0
-        fr_max_idx = None
-        for idx, fr in enumerate(fr_list):
-            if fr > fr_max:
-                fr_max = fr
-                fr_max_idx = idx
-        fr_max_list.append(fr_max)
-        fr_max_idx_list.append(fr_max_idx/roadLength)
-
-    roadLengths = [i for i in range(min_roadLength, max_roadLength + 1)]
-
-    plt.plot(roadLengths, fr_max_list, label="Maximum flow rate", color="b")
-    plt.plot(roadLengths, fr_max_idx_list, label="Density at maximum flow rate", color="r")
-    plt.legend()
-    plt.xlabel(f"Roadlength")
-    plt.ylabel("Observables")
-    plt.show()
+                avg_fr = sum(S.obs.flowrate)/S.cars.t
+                fr_temp_list.append(avg_fr)
+            d_list.append(d)
+            fr_list.append(sum(fr_temp_list)/k)
+        nested_fr_list.append(fr_list)
+        try:
+            diffs = [abs(nested_fr_list[rL_idx][j] - nested_fr_list[rL_idx - 1][j]) for j in range(len(densities))]
+        except IndexError:
+            diffs = [np.inf for i in range(k)]
         
+        mean_diff = sum(diffs)/len(diffs)
+
+        diff_list.append(mean_diff)
+
+        if mean_diff < tol and rL_idx != 0:
+            max_roadLength = roadLength
+            break
+
+    plt.plot(list(range(min_roadLength + 1, max_roadLength + 1, N_stride)), diff_list[1:], label="Average difference between fundemental diagram iterations")
+    plt.xlabel("Road length")
+    plt.ylabel("Mean difference between fundemental diagram iterations")
+    plt.legend()
+    plt.show()
+
+    
+        
+        
+
 
 
 # Calling 'main()' if the script is executed.
