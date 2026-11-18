@@ -19,6 +19,7 @@ from matplotlib import animation
 import numpy.random as rng
 import numpy as np
 import random
+import copy
 
 import matplotlib
 
@@ -27,7 +28,7 @@ class Cars:
 
     """ Class for the state of a number of cars """
 
-    def __init__(self, numCars=5, roadLength=50, v0=0, init_cond="basic"):
+    def __init__(self, numCars=5, roadLength=50, v0=1, init_cond="basic"):
         self.numCars    = numCars
         self.roadLength = roadLength
         self.t  = 0
@@ -36,9 +37,6 @@ class Cars:
         self.c  = []
         positions = [i for i in range(self.roadLength)]
         for i in range(numCars):
-            # TODO: Set the initial position for each car.
-            # Note that the ordering of the cars on the road needs to match
-            # the order in which you compute the distances between cars
             if init_cond == "basic":
                 self.x.append(i)
             elif init_cond == "random":
@@ -220,19 +218,20 @@ class Simulation:
 def main() :
     vmax = 2
     p = 0.5
-    numcars = 10
-    roadlength = 100
+    numcars = 25
+    roadlength = 50
+    numsteps = 1000
 
     # Be sure you are passing the correct initial conditions!
-    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="random")
+    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="basic")
 
     # Create the simulation object for your cars instance:
     S = Simulation(cars)
 
     #S.run_animate(propagator=ConstantPropagator())
-    S.run_animate(propagator=MyPropagator(vmax=vmax, p=p))
+    #S.run_animate(propagator=MyPropagator(vmax=vmax, p=p))
 
-    #S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=10000)
+    S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
     S.plot_observables()
 
 def e_22a():
@@ -244,7 +243,9 @@ def e_22a():
     
     max_N_cars = 100
     N_stride = 1
-    k = 50
+    k = 100
+    numsteps = 100
+
     fr_list = []
 
     for N_cars in range(0, max_N_cars, N_stride):
@@ -252,7 +253,7 @@ def e_22a():
         fr_temp_list = []
         for i in range(k):
             S.reset(Cars(numCars=N_cars, roadLength=roadLength, init_cond="random"))
-            S.run(propagator=MyPropagator(vmax=vmax, p=p))
+            S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
             avg_fr_init_cond = sum(S.obs.flowrate)/S.cars.t
             fr_temp_list.append(avg_fr_init_cond)
         avg_fr_k_attempts = sum(fr_temp_list)/k
@@ -268,12 +269,107 @@ def e_22a():
     densities = [N/roadLength for N in N_list]
 
     plt.plot(densities, fr_list, label="Flowrate", color="b")
-    plt.axvline(x=densities[fr_max_idx], label=f"x={densities[fr_max_idx]}", color="r")
+    plt.axvline(x=densities[fr_max_idx], label=f"x={densities[fr_max_idx]} (fr_max = {fr_max})", color="r")
     plt.legend()
-    plt.xlabel("Car density (number of cars / road length)")
+    plt.xlabel(f"Car density (number of cars / road length, road length = {roadLength}")
     plt.ylabel("Flow rate")
     plt.show()
 
+def e_22b():
+    vmax = 2
+    p = 0.5
+    roadLength = 50
+    N_cars = 25
+
+    S = Simulation()
+
+    k = 10000
+    numsteps = 100
+    tol = 0.001
+    fr_list = []
+    fr2_list = []
+    std_list = []
+    last_idx = k - 1
+
+    for i in range(k):
+        S.reset(Cars(numCars=N_cars, roadLength=roadLength, init_cond="random"))
+        S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
+        avg_fr = sum(S.obs.flowrate)/S.cars.t
+        avg_fr2 = sum([fr**2 for fr in S.obs.flowrate])/S.cars.t
+        fr_list.append(avg_fr)
+        fr2_list.append(avg_fr2)
+
+        try:
+            var = sum(fr2_list)/len(fr2_list) - (sum(fr_list)/len(fr_list))**2
+            std = np.sqrt(var/(len(fr_list) - 1)) #Standard Error Estimate
+            std_list.append(std)
+            print(f"iteration: {i+1}, std={std}")
+            if std < 0.001 and i > 0:
+                last_idx = i
+                break
+        except ZeroDivisionError:
+            std_list.append(0)
+            print(f"iteration: {i+1}, std={0}")
+
+
+    k_list = [j for j in range(last_idx + 1)]
+
+    m, b = np.polyfit(np.log(k_list[1:].copy()), np.log(std_list[1:].copy()), 1)
+    f = lambda x: np.e**b*x**m
+    
+    plt.loglog(k_list[1:], std_list[1:], label="Standard deviation", color="b")
+    plt.loglog(k_list[1:], f(k_list[1:]), label=f"y = e^[{b}]*N^[{m}]")
+    plt.legend()
+    plt.xlabel(f"Number of attempts")
+    plt.ylabel("Standard deviation")
+    plt.show()
+    
+def e_22c():
+    vmax = 2
+    p = 0.5
+    max_roadLength = 75
+    min_roadLength = 2
+
+    S = Simulation()
+    
+    N_stride = 1
+    k = 100
+    numsteps = 100
+
+    fr_max_list = []
+    fr_max_idx_list = []
+
+    for roadLength in range(min_roadLength, max_roadLength + 1):
+        print(f"road length = {roadLength}/{max_roadLength}")
+        fr_list = []
+
+        for N_cars in range(0, roadLength, N_stride):
+            fr_temp_list = []
+            for i in range(k):
+                S.reset(Cars(numCars=N_cars, roadLength=roadLength, init_cond="random"))
+                S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
+                avg_fr_init_cond = sum(S.obs.flowrate)/S.cars.t
+                fr_temp_list.append(avg_fr_init_cond)
+            avg_fr_k_attempts = sum(fr_temp_list)/k
+            fr_list.append(avg_fr_k_attempts)
+
+        fr_max = 0
+        fr_max_idx = None
+        for idx, fr in enumerate(fr_list):
+            if fr > fr_max:
+                fr_max = fr
+                fr_max_idx = idx
+        fr_max_list.append(fr_max)
+        fr_max_idx_list.append(fr_max_idx/roadLength)
+
+    roadLengths = [i for i in range(min_roadLength, max_roadLength + 1)]
+
+    plt.plot(roadLengths, fr_max_list, label="Maximum flow rate", color="b")
+    plt.plot(roadLengths, fr_max_idx_list, label="Density at maximum flow rate", color="r")
+    plt.legend()
+    plt.xlabel(f"Roadlength")
+    plt.ylabel("Observables")
+    plt.show()
         
 
 
@@ -282,5 +378,6 @@ def e_22a():
 # write another script importing and utilizing the functions and classes defined in this one)
 if __name__ == "__main__" :
     #main()
-    e_22a()
-
+    #e_22a()
+    #e_22b()
+    e_22c()
