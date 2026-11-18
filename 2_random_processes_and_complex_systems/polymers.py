@@ -68,8 +68,8 @@ def plot_rw(rw_x, rw_y, rw_n, fig_name=None):
         n = rw_n[i]
         plt.arrow(rw_x[i], rw_y[i], rw_x[i+1] - rw_x[i], rw_y[i+1] - rw_y[i], color=color_dict[n], shape=shape_dict[n], width=0.05)
     plt.figtext(0.7, 0.7, "red -> right", wrap=True, bbox={'facecolor':"red"})
-    plt.figtext(0.7, 0.65, "teal -> up", wrap=True, bbox={'facecolor':"aqua"})
-    plt.figtext(0.7, 0.6, "blue -> left", wrap=True, bbox={'facecolor':"blue"})
+    plt.figtext(0.7, 0.65, "teal -> left", wrap=True, bbox={'facecolor':"aqua"})
+    plt.figtext(0.7, 0.6, "blue -> up", wrap=True, bbox={'facecolor':"blue"})
     plt.figtext(0.7, 0.55, "black -> down", wrap=True, color="white", bbox={'facecolor':"black"})
     plt.legend()
     plt.axis("equal")
@@ -181,9 +181,9 @@ def e_21d():
     plt.show()
 
 def e_21e():
-    N_vals = 100
-    N_max = 1000
-    k = 500
+    N_vals = 1000
+    N_max = 
+    k = 1000
 
     get_n = random.randint
     args_n = (0,3)
@@ -218,7 +218,7 @@ def e_21e():
 
     plt.figure("Distance RMS")
     plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)", base=np.e)
-    plt.loglog(N_list, f(N_list), label=f"y = e^[{b}]*N^[{m}] (in log space)")
+    plt.loglog(N_list, f(N_list), label=f"y = e^[{b}]*N^[{m}]")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()
@@ -231,6 +231,22 @@ def test_random():
     plt.hist(n_list)
     plt.show()
 
+def test_self_avoiding():
+    steps = 150
+    v0 = (0,0)
+    
+    i = 1
+
+    while True:
+        try:
+            print(f"Iteration: {i}")
+            i += 1
+            rw_x, rw_y, rw_n = rw_points(random.choice, (0,3), steps=steps, v0=v0, mode="SA")
+            break
+        except TypeError:
+            pass
+    plot_rw(rw_x, rw_y, rw_n, fig_name=None)
+
 if __name__ == "__main__":
     #e_21a()
     #e_21b()
@@ -238,3 +254,4 @@ if __name__ == "__main__":
     #e_21d()
     e_21e()
     #test_random()
+    #test_self_avoiding()

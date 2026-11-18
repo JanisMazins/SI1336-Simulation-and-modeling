@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy.random as rng
 import numpy as np
+import random
 
 import matplotlib
 
@@ -37,14 +38,15 @@ class Cars:
             # TODO: Set the initial position for each car.
             # Note that the ordering of the cars on the road needs to match
             # the order in which you compute the distances between cars
-            self.x.append(i)        # the position of the cars on the road
+            self.x.append(i*roadLength/numCars)        # the position of the cars on the road
             self.v.append(v0)       # the speed of the cars
             self.c.append(i)        # the color of the cars (for drawing)
 
-    # NOTE: you can, but don't have to use this function for computing distances
     def distance(self, i):
-        # TODO: Implement the function returning the PERIODIC distance 
-        # between car i and the one in front 
+        try: 
+            return abs(self.x[i + 1] - self.x[i])
+        except IndexError:
+            return abs(50 - self.x[i]) + abs(self.x[0])
 
 
 class Observables:
@@ -91,11 +93,6 @@ class ConstantPropagator(BasePropagator) :
         cars.t += 1
         return 0
 
-# TODO
-# HERE YOU SHOULD IMPLEMENT THE DIFFERENT CAR BEHAVIOR RULES
-# Define you own class which inherits from BasePropagator (e.g. MyPropagator(BasePropagator))
-# and implement timestep according to the rule described in the project
-
 class MyPropagator(BasePropagator) :
 
     def __init__(self, vmax, p):
@@ -104,7 +101,25 @@ class MyPropagator(BasePropagator) :
         self.p = p
 
     def timestep(self, cars, obs):
-        # TODO Here you should implement the car behaviour rules
+        p_bools = [True for i in range(round(1000*self.p))]
+        p_complementary_bools = [False for i in range(1000 - round(1000*self.p))]
+        bool_list = p_bools + p_complementary_bools
+        for i in range(cars.numCars):
+            if cars.v[i] < self.vmax:
+                cars.v[i] += 1 
+
+            d = cars.distance(i)
+            if cars.v[i] >= d:
+                cars.v[i] = d - 1
+
+            randomly_slower = random.choice(bool_list)
+            if randomly_slower and cars.v[i] > 0:
+                cars.v[i] -= 1
+
+            cars.x[i] += cars.v[i]
+        cars.t += 1
+        fr = sum(cars.v)/cars.roadLength
+        return fr
 
 ############################################################################################
 
@@ -183,7 +198,7 @@ class Simulation:
 
         # If you experience problems visualizing the animation and/or
         # the following figures comment out the next line 
-        # plt.waitforbuttonpress(30)
+        #plt.waitforbuttonpress(30)
 
         self.plot_observables(title)
     
@@ -191,18 +206,22 @@ class Simulation:
 # It's good practice to encapsulate the script execution in 
 # a main() function (e.g. for profiling reasons)
 def main() :
-
-    # Here you can define one or more instances of cars, with possibly different parameters, 
-    # and pass them to the simulator 
+    vmax = 2
+    p = 0.5
+    numcars = 25
+    roadlength = 100
 
     # Be sure you are passing the correct initial conditions!
-    cars = Cars(numCars = 5, roadLength=50)
+    cars = Cars(numCars = numcars, roadLength=roadlength)
 
     # Create the simulation object for your cars instance:
-    simulation = Simulation(cars)
+    S = Simulation(cars)
 
     # simulation.run_animate(propagator=ConstantPropagator())
-    simulation.run_animate(propagator=MyPropagator(vmax=2, p=0.2))
+    S.run_animate(propagator=MyPropagator(vmax=vmax, p=p))
+
+    #S.run(propagator=MyPropagator(vmax=vmax, p=p))
+
 
 
 # Calling 'main()' if the script is executed.
