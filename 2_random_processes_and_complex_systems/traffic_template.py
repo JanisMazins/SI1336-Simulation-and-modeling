@@ -27,27 +27,38 @@ class Cars:
 
     """ Class for the state of a number of cars """
 
-    def __init__(self, numCars=5, roadLength=50, v0=1):
+    def __init__(self, numCars=5, roadLength=50, v0=0, init_cond="basic"):
         self.numCars    = numCars
         self.roadLength = roadLength
         self.t  = 0
         self.x  = []
         self.v  = []
         self.c  = []
+        positions = [i for i in range(self.roadLength)]
         for i in range(numCars):
             # TODO: Set the initial position for each car.
             # Note that the ordering of the cars on the road needs to match
             # the order in which you compute the distances between cars
-            self.x.append(i*roadLength/numCars)        # the position of the cars on the road
+            if init_cond == "basic":
+                self.x.append(i)
+            elif init_cond == "random":
+                random_idx = random.randint(0, len(positions) - 1)
+                random_x = positions.pop(random_idx)
+                self.x.append(random_x)
             self.v.append(v0)       # the speed of the cars
             self.c.append(i)        # the color of the cars (for drawing)
+        self.x.sort()
 
     def distance(self, i):
-        try: 
-            return abs(self.x[i + 1] - self.x[i])
-        except IndexError:
-            return abs(50 - self.x[i]) + abs(self.x[0])
-
+        if i == self.numCars - 1:
+            next_idx = 0
+        else:
+            next_idx = i + 1
+        
+        if self.x[next_idx] - self.x[i] > 0:
+            return self.x[next_idx] - self.x[i]
+        else:
+            return self.roadLength - self.x[i] + self.x[next_idx]
 
 class Observables:
 
@@ -99,11 +110,11 @@ class MyPropagator(BasePropagator) :
         BasePropagator.__init__(self)
         self.vmax = vmax
         self.p = p
-
-    def timestep(self, cars, obs):
         p_bools = [True for i in range(round(1000*self.p))]
         p_complementary_bools = [False for i in range(1000 - round(1000*self.p))]
-        bool_list = p_bools + p_complementary_bools
+        self.bool_list = p_bools + p_complementary_bools
+
+    def timestep(self, cars, obs):
         for i in range(cars.numCars):
             if cars.v[i] < self.vmax:
                 cars.v[i] += 1 
@@ -112,13 +123,18 @@ class MyPropagator(BasePropagator) :
             if cars.v[i] >= d:
                 cars.v[i] = d - 1
 
-            randomly_slower = random.choice(bool_list)
+            randomly_slower = random.choice(self.bool_list)
             if randomly_slower and cars.v[i] > 0:
                 cars.v[i] -= 1
 
-            cars.x[i] += cars.v[i]
+            if cars.x[i] + cars.v[i] < cars.roadLength:
+                cars.x[i] += cars.v[i]
+            else:
+                cars.x[i] = cars.x[i] + cars.v[i] - cars.roadLength
+
         cars.t += 1
         fr = sum(cars.v)/cars.roadLength
+
         return fr
 
 ############################################################################################
@@ -162,7 +178,7 @@ class Simulation:
         plt.plot(self.obs.time, self.obs.flowrate)
         plt.xlabel('time')
         plt.ylabel('flow rate')
-        plt.savefig(title + ".pdf")
+        #plt.savefig(title + ".pdf")
         plt.show()
 
     # Run without displaying any animation (fast)
@@ -174,8 +190,6 @@ class Simulation:
 
         for it in range(numsteps):
             propagator.propagate(self.cars, self.obs)
-
-        self.plot_observables(title)
 
     # Run while displaying the animation of bunch of cars going in circe (slow-ish)
     def run_animate(self,
@@ -199,8 +213,6 @@ class Simulation:
         # If you experience problems visualizing the animation and/or
         # the following figures comment out the next line 
         #plt.waitforbuttonpress(30)
-
-        self.plot_observables(title)
     
 
 # It's good practice to encapsulate the script execution in 
@@ -208,25 +220,67 @@ class Simulation:
 def main() :
     vmax = 2
     p = 0.5
-    numcars = 25
+    numcars = 10
     roadlength = 100
 
     # Be sure you are passing the correct initial conditions!
-    cars = Cars(numCars = numcars, roadLength=roadlength)
+    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="random")
 
     # Create the simulation object for your cars instance:
     S = Simulation(cars)
 
-    # simulation.run_animate(propagator=ConstantPropagator())
+    #S.run_animate(propagator=ConstantPropagator())
     S.run_animate(propagator=MyPropagator(vmax=vmax, p=p))
 
-    #S.run(propagator=MyPropagator(vmax=vmax, p=p))
+    #S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=10000)
+    S.plot_observables()
 
+def e_22a():
+    vmax = 2
+    p = 0.5
+    roadLength = 100
+
+    S = Simulation()
+    
+    max_N_cars = 100
+    N_stride = 1
+    k = 50
+    fr_list = []
+
+    for N_cars in range(0, max_N_cars, N_stride):
+        print(f"N_cars = {N_cars}/{max_N_cars}")
+        fr_temp_list = []
+        for i in range(k):
+            S.reset(Cars(numCars=N_cars, roadLength=roadLength, init_cond="random"))
+            S.run(propagator=MyPropagator(vmax=vmax, p=p))
+            avg_fr_init_cond = sum(S.obs.flowrate)/S.cars.t
+            fr_temp_list.append(avg_fr_init_cond)
+        avg_fr_k_attempts = sum(fr_temp_list)/k
+        fr_list.append(avg_fr_k_attempts)
+
+    fr_max = 0
+    fr_max_idx = None
+    for idx, fr in enumerate(fr_list):
+        if fr > fr_max:
+            fr_max = fr
+            fr_max_idx = idx
+    N_list = [i for i in range(0, max_N_cars, N_stride)]
+    densities = [N/roadLength for N in N_list]
+
+    plt.plot(densities, fr_list, label="Flowrate", color="b")
+    plt.axvline(x=densities[fr_max_idx], label=f"x={densities[fr_max_idx]}", color="r")
+    plt.legend()
+    plt.xlabel("Car density (number of cars / road length)")
+    plt.ylabel("Flow rate")
+    plt.show()
+
+        
 
 
 # Calling 'main()' if the script is executed.
 # If the script is instead just imported, main is not called (this can be useful if you want to
 # write another script importing and utilizing the functions and classes defined in this one)
 if __name__ == "__main__" :
-    main()
+    #main()
+    e_22a()
 
