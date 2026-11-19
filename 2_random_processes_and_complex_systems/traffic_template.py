@@ -220,7 +220,7 @@ def main() :
     p = 0.5
     numcars = 25
     roadlength = 50
-    numsteps = 1000
+    numsteps = 100
 
     # Be sure you are passing the correct initial conditions!
     cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="basic")
@@ -317,8 +317,8 @@ def e_22b():
     m, b = np.polyfit(np.log(k_list[1:].copy()), np.log(std_list[1:].copy()), 1)
     f = lambda x: np.e**b*x**m
     
-    plt.loglog(k_list[1:], std_list[1:], label="Standard deviation", color="b")
-    plt.loglog(k_list[1:], f(k_list[1:]), label=f"y = e^[{b}]*N^[{m}]")
+    plt.plot(k_list[1:], std_list[1:], label="Standard deviation", color="b")
+    plt.plot(k_list[1:], f(k_list[1:]), label=f"y = e^[{b}]*N^[{m}]")
     plt.legend()
     plt.xlabel(f"Number of attempts")
     plt.ylabel("Standard deviation")
@@ -385,7 +385,7 @@ def e_22c():
 # If the script is instead just imported, main is not called (this can be useful if you want to
 # write another script importing and utilizing the functions and classes defined in this one)
 if __name__ == "__main__" :
-    #main()
+    main()
     #e_22a()
     #e_22b()
-    e_22c()
+    #e_22c()
