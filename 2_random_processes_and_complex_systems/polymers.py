@@ -125,25 +125,34 @@ def e_21c():
     for N in N_list:
         print(f"N={N}/{N_max}")
         R2_temp_list = []
-        R4_temp_list = []
+        R_temp_list = []
         for i in range(k):
             rw_x, rw_y, _ = rw_points(random.randint, (0,3), steps=N)
             R2 = rw_x[-1]**2 + rw_y[-1]**2
             R2_temp_list.append(R2)
-            R4_temp_list.append(R2**2)
+            R_temp_list.append(np.sqrt(R2))
         mean = np.sqrt(sum(R2_temp_list)/k)
-        std = np.sqrt(sum(R4_temp_list)/k - (sum(R2_temp_list)/k)**2)
+        var = sum(R2_temp_list)/k - (sum(R_temp_list)/k)**2
+        std = np.sqrt(var/(k-1))
         R2_rms_list.append(mean)
         std_list.append(std)
 
+    m1, b1 = np.polyfit(np.log(N_list.copy()), np.log(R2_rms_list.copy()), 1)
+    f1 = lambda x: np.e**b1*x**m1
+
     plt.figure("Distance RMS")
-    plt.plot(N_list, R2_rms_list, label="<R^2>^-(1/2)[N]")
+    plt.plot(N_list, R2_rms_list, label="Root mean square distance")
+    plt.plot(N_list, f1(N_list), label=f"y = e^[{round(b1, 2)}]*N^[{round(m1, 2)}]")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()
 
+    m2, b2 = np.polyfit(np.log(N_list[1:].copy()), np.log(std_list[1:].copy()), 1)
+    f2 = lambda x: np.e**b2*x**m2
+
     plt.figure("Distance STD")
-    plt.plot(N_list, std_list, label="std = sqrt(<R^4> - <R^2>^2)")
+    plt.plot(N_list, std_list, label="Standard deviation")
+    plt.plot(N_list[1:], f2(N_list[1:]), label=f"y = e^[{round(b2, 2)}]*N^[{round(m2, 2)}]")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()
@@ -181,13 +190,13 @@ def e_21d():
     plt.show()
 
 def e_21e():
-    N_vals = 1000
-    N_max = 
+    N_vals = 50
+    N_max = 50
     k = 1000
 
-    get_n = random.randint
+    get_n = random.choice
     args_n = (0,3)
-    mode = None
+    mode = "SA"
 
     N_list = np.round(np.linspace(1, N_max, N_vals)).astype(int)
     R2_rms_list = []
@@ -217,8 +226,8 @@ def e_21e():
     f = lambda x: np.e**b*x**m
 
     plt.figure("Distance RMS")
-    plt.loglog(N_list, R2_rms_list, label="<R^2>^-(1/2)", base=np.e)
-    plt.loglog(N_list, f(N_list), label=f"y = e^[{b}]*N^[{m}]")
+    plt.plot(N_list, R2_rms_list, label="<R^2>^-(1/2)")
+    plt.plot(N_list, f(N_list), label=f"y = e^[{round(b, 2)}]*N^[{round(m, 2)}]")
     plt.xlabel("N")
     plt.ylabel("Distance")
     plt.legend()

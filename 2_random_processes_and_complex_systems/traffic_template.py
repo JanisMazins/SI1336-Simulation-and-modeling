@@ -36,7 +36,7 @@ class Cars:
         self.v  = []
         self.c  = []
         positions = [i for i in range(self.roadLength)]
-        for i in range(numCars):
+        for i in range(self.numCars):
             if init_cond == "basic":
                 self.x.append(i)
             elif init_cond == "random":
@@ -58,6 +58,10 @@ class Cars:
         else:
             return self.roadLength - self.x[i] + self.x[next_idx]
 
+    def fuel(self, i):
+        v = self.v[i]
+        return 1 + v + 0.2*v**3
+
 class Observables:
 
     """ Class for storing observables """
@@ -65,6 +69,7 @@ class Observables:
     def __init__(self):
         self.time = []          # list to store time
         self.flowrate = []      # list to store the flow rate
+        self.f = []
         
 
 class BasePropagator:
@@ -77,10 +82,15 @@ class BasePropagator:
         """ Perform a single integration step """
         
         fr = self.timestep(cars, obs)
-
+        try:
+            avg_fuel = sum([cars.fuel(i) for i in range(cars.numCars)])/cars.numCars
+        except ZeroDivisionError:
+            avg_fuel = 0
         # Append observables to their lists
         obs.time.append(cars.t)
         obs.flowrate.append(fr)
+        obs.f.append(avg_fuel)
+         
               
     def timestep(self, cars, obs):
 
@@ -218,12 +228,12 @@ class Simulation:
 def main() :
     vmax = 2
     p = 0.5
-    numcars = 25
-    roadlength = 50
-    numsteps = 100
+    numcars = 500
+    roadlength = 1000
+    numsteps = 1000
 
     # Be sure you are passing the correct initial conditions!
-    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="basic")
+    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="random")
 
     # Create the simulation object for your cars instance:
     S = Simulation(cars)
@@ -237,13 +247,13 @@ def main() :
 def e_22a():
     vmax = 2
     p = 0.5
-    roadLength = 100
+    roadLength = 200
 
     S = Simulation()
     
-    max_N_cars = 100
+    max_N_cars = 200
     N_stride = 1
-    k = 100
+    k = 10
     numsteps = 100
 
     fr_list = []
@@ -329,23 +339,26 @@ def e_22c():
     p = 0.5
 
     min_roadLength = 2
-    max_roadLength = 75
-    N_stride = 1
+    max_roadLength = 250
+    N_stride = 10
     densities = np.linspace(0, 1, 25)
 
     S = Simulation()
 
-    k = 100
-    numsteps = 300
-    tol = 0.00001
+    k = 10
+    numsteps = 2000
+    tol = 0.0001
     
     nested_fr_list = []
     diff_list = []
 
     for rL_idx, roadLength in enumerate(range(min_roadLength, max_roadLength + 1, N_stride)):
-        print(f"road length = {roadLength}/{max_roadLength}")
+        try:
+            print(f"road length = {roadLength}/{max_roadLength}, last diff = {diff_list[rL_idx - 1]}")
+        except IndexError:
+            print(f"road length = {roadLength}/{max_roadLength}")
+
         fr_list = []
-        d_list = []
         for d in densities:
             fr_temp_list = []
             for i in range(k):
@@ -353,7 +366,6 @@ def e_22c():
                 S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
                 avg_fr = sum(S.obs.flowrate)/S.cars.t
                 fr_temp_list.append(avg_fr)
-            d_list.append(d)
             fr_list.append(sum(fr_temp_list)/k)
         nested_fr_list.append(fr_list)
         try:
@@ -365,19 +377,66 @@ def e_22c():
 
         diff_list.append(mean_diff)
 
-        if mean_diff < tol and rL_idx != 0:
+        if mean_diff < tol and rL_idx != 0 and True == False:
             max_roadLength = roadLength
             break
 
-    plt.plot(list(range(min_roadLength + 1, max_roadLength + 1, N_stride)), diff_list[1:], label="Average difference between fundemental diagram iterations")
+    #plt.loglog(list(range(min_roadLength + 1, max_roadLength + 1, N_stride)), diff_list[1:], label="Average difference between fundemental diagram iterations")
+    roadLengths = list(range(min_roadLength, max_roadLength + 1, N_stride))
+
+
+    for idx, d in enumerate(densities):
+        plt.plot(roadLengths, [nested_fr_list[i][idx] for i in range(len(roadLengths))], label=f"d={d}")
+        plt.legend()
     plt.xlabel("Road length")
     plt.ylabel("Mean difference between fundemental diagram iterations")
     plt.legend()
     plt.show()
 
+def e_22d():
+    vmax_array = np.linspace(1, 50, 50)
+    p = 0.25
+    d = 0.4
+    roadLength = 250
+    k = 100
     
-        
-        
+    numsteps = 1000
+
+    fr_list = []
+    fuel_list = []
+
+    S = Simulation()
+
+    for vmax in vmax_array:
+        fr_temp_list = []
+        fuel_temp_list = []
+        for i in range(k):
+            S.reset(Cars(numCars=int(d*roadLength), roadLength=roadLength, init_cond="random"))
+            S.run(propagator=MyPropagator(vmax=vmax, p=p), numsteps=numsteps)
+
+            avg_fr  = sum(S.obs.flowrate)/S.cars.t
+            avg_fuel = sum(S.obs.f)/S.cars.t
+
+            fr_temp_list.append(avg_fr)
+            fuel_temp_list.append(avg_fuel)
+
+        avg_avg_fr = sum(fr_temp_list)/k
+        avg_avg_fuel = sum(fuel_temp_list)/k
+
+        fr_list.append(avg_avg_fr)
+        fuel_list.append(avg_avg_fuel)
+    
+    fuel_div_fr_list = [fuel_list[i]/fr_list[i] for i in range(len(vmax_array))]
+
+    plt.figure()
+    plt.plot(vmax_array, fr_list, color="r", label="Flow rate")
+    plt.plot(vmax_array, fuel_div_fr_list, color="b", label="Fuel consumption divided by flow rate")
+    plt.xlabel("Maximum speed")
+    plt.ylabel("Observables")
+    plt.legend()
+    plt.show()
+    
+
 
 
 
@@ -385,7 +444,8 @@ def e_22c():
 # If the script is instead just imported, main is not called (this can be useful if you want to
 # write another script importing and utilizing the functions and classes defined in this one)
 if __name__ == "__main__" :
-    main()
+    #main()
     #e_22a()
     #e_22b()
     #e_22c()
+    e_22d()
