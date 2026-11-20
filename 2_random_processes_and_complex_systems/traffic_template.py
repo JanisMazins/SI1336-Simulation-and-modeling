@@ -189,6 +189,9 @@ class Simulation:
         plt.xlabel('time')
         plt.ylabel('flow rate')
         #plt.savefig(title + ".pdf")
+        plt.figure("Flow rate histogram")
+        plt.hist(self.obs.flowrate, bins=int(np.sqrt(len(self.obs.flowrate))))
+        plt.xlabel("flow rate")
         plt.show()
 
     # Run without displaying any animation (fast)
@@ -230,12 +233,12 @@ class Simulation:
 def main() :
     vmax = 2
     p = 0.5
-    numcars = 2500
-    roadlength = 5000
-    numsteps = 2000
+    numcars = 25
+    roadlength = 50
+    numsteps = 100000
 
     # Be sure you are passing the correct initial conditions!
-    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="random")
+    cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="even")
 
     # Create the simulation object for your cars instance:
     S = Simulation(cars)
@@ -316,7 +319,7 @@ def e_22b():
             std = np.sqrt(var/(len(fr_list) - 1)) #Standard Error Estimate
             std_list.append(std)
             print(f"iteration: {i+1}, std={std}")
-            if std < 0.001 and i > 0:
+            if std < tol and i > 0:
                 last_idx = i
                 break
         except ZeroDivisionError:
@@ -328,12 +331,18 @@ def e_22b():
 
     m, b = np.polyfit(np.log(k_list[1:].copy()), np.log(std_list[1:].copy()), 1)
     f = lambda x: np.e**b*x**m
+
+    print(f"average flow rate: {sum(fr_list)/len(fr_list)}")
     
-    plt.plot(k_list[1:], std_list[1:], label="Standard deviation", color="b")
-    plt.plot(k_list[1:], f(k_list[1:]), label=f"y = e^[{b}]*N^[{m}]")
+    plt.plot(k_list[1:], std_list[1:], label=f"Standard deviation per iteration ({last_idx + 1} iterations, mean = {round(sum(fr_list)/len(fr_list), 3)})", color="b")
+    plt.plot(k_list[1:], f(k_list[1:]), label=f"y = [{round(np.e**b, 3)}*N^[{round(m, 3)}]")
     plt.legend()
     plt.xlabel(f"Number of attempts")
     plt.ylabel("Standard deviation")
+
+    plt.figure()
+    plt.hist(fr_list, bins=int(np.sqrt(len(fr_list))))
+
     plt.show()
     
 def e_22c():
@@ -341,14 +350,14 @@ def e_22c():
     p = 0.5
 
     min_roadLength = 2
-    max_roadLength = 250
-    N_stride = 10
-    densities = np.linspace(0, 1, 25)
+    max_roadLength = 10000
+    N_stride = 100
+    densities = np.linspace(0.1, 0.9, 5)
 
     S = Simulation()
 
     k = 10
-    numsteps = 2000
+    numsteps = 1000
     tol = 0.0001
     
     nested_fr_list = []
@@ -383,20 +392,23 @@ def e_22c():
             max_roadLength = roadLength
             break
 
-    #plt.loglog(list(range(min_roadLength + 1, max_roadLength + 1, N_stride)), diff_list[1:], label="Average difference between fundemental diagram iterations")
-    roadLengths = list(range(min_roadLength, max_roadLength + 1, N_stride))
-
-
-    for idx, d in enumerate(densities):
-        plt.plot(roadLengths, [nested_fr_list[i][idx] for i in range(len(roadLengths))], label=f"d={d}")
-        plt.legend()
+    plt.loglog(list(range(min_roadLength + N_stride, max_roadLength + 1, N_stride)), diff_list[1:], label="Average difference between fundemental diagram iterations")
     plt.xlabel("Road length")
     plt.ylabel("Mean difference between fundemental diagram iterations")
+    plt.legend()
+
+    plt.figure()
+    roadLengths = list(range(min_roadLength, max_roadLength + 1, N_stride))
+    for idx, d in enumerate(densities):
+        plt.plot(roadLengths, [nested_fr_list[i][idx] for i in range(len(roadLengths))], label=f"d={round(d, 3)}")
+        plt.legend()
+    plt.xlabel("Road length")
+    plt.ylabel("Flow rate")
     plt.legend()
     plt.show()
 
 def e_22d():
-    vmax_array = np.linspace(1, 5, 5)
+    vmax_array = np.linspace(1, 50, 50)
     p = 0.25
     d = 0.4
     roadLength = 250
@@ -432,10 +444,16 @@ def e_22d():
 
     plt.figure()
     plt.plot(vmax_array, fr_list, color="r", label="Flow rate")
+    plt.xlabel("Maximum speed")
+    plt.ylabel("Flow rate")
+    plt.legend()
+
+    plt.figure()
     plt.plot(vmax_array, fuel_div_fr_list, color="b", label="Fuel consumption divided by flow rate")
     plt.xlabel("Maximum speed")
-    plt.ylabel("Observables")
+    plt.ylabel("Average fuel consumption / flow rate")
     plt.legend()
+
     plt.show()
 
 # Calling 'main()' if the script is executed.
@@ -445,5 +463,5 @@ if __name__ == "__main__" :
     #main()
     #e_22a()
     #e_22b()
-    #e_22c()
-    e_22d()
+    e_22c()
+    #e_22d()
