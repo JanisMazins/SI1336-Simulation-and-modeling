@@ -235,7 +235,7 @@ def main() :
     p = 0.5
     numcars = 25
     roadlength = 50
-    numsteps = 100000
+    numsteps = 5000
 
     # Be sure you are passing the correct initial conditions!
     cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="even")
@@ -350,8 +350,8 @@ def e_22c():
     p = 0.5
 
     min_roadLength = 2
-    max_roadLength = 10000
-    N_stride = 100
+    max_roadLength = 100
+    N_stride = 1
     densities = np.linspace(0.1, 0.9, 5)
 
     S = Simulation()
