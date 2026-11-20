@@ -43,6 +43,8 @@ class Cars:
                 random_idx = random.randint(0, len(positions) - 1)
                 random_x = positions.pop(random_idx)
                 self.x.append(random_x)
+            elif init_cond == "even":
+                self.x.append((i*(self.roadLength/self.numCars)) % self.roadLength)
             self.v.append(v0)       # the speed of the cars
             self.c.append(i)        # the color of the cars (for drawing)
         self.x.sort()
@@ -228,9 +230,9 @@ class Simulation:
 def main() :
     vmax = 2
     p = 0.5
-    numcars = 500
-    roadlength = 1000
-    numsteps = 1000
+    numcars = 2500
+    roadlength = 5000
+    numsteps = 2000
 
     # Be sure you are passing the correct initial conditions!
     cars = Cars(numCars = numcars, roadLength=roadlength, init_cond="random")
@@ -394,7 +396,7 @@ def e_22c():
     plt.show()
 
 def e_22d():
-    vmax_array = np.linspace(1, 50, 50)
+    vmax_array = np.linspace(1, 5, 5)
     p = 0.25
     d = 0.4
     roadLength = 250
@@ -435,10 +437,6 @@ def e_22d():
     plt.ylabel("Observables")
     plt.legend()
     plt.show()
-    
-
-
-
 
 # Calling 'main()' if the script is executed.
 # If the script is instead just imported, main is not called (this can be useful if you want to
