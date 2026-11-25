@@ -34,8 +34,8 @@ def metropolis(n_steps, delta, N_0=1000, initial_x=1, p=lambda x: x*np.e**(-x), 
 
 
 def main():
-    n_steps = 10**3
-    deltas = np.logspace(-1, 1, 25)
+    n_steps = 10**6
+    deltas = np.logspace(-1, 1, 10)
     N_0 = 500
     k = 100
 
