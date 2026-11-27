@@ -52,12 +52,12 @@ def metropolis(n_steps, delta, N_0=100, initial_x=1, p=lambda x: x*np.e**(-x), f
 
 
 def rms_std():
-    n_steps = 10**3
+    n_steps = 10**4
     N_0 = 1000
     p = lambda x: x*np.e**(-x)
 
-    deltas_log = np.logspace(-1, 1, 10)
-    deltas_lin = np.linspace(0.1, 1e1, 10)
+    deltas_log = np.logspace(-1, 2, 10)
+    deltas_lin = np.linspace(0.1, 1e2, 10)
     deltas = np.unique(np.sort(np.concatenate((deltas_log, deltas_lin))))
     
     k = 100
